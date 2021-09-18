@@ -1,0 +1,9 @@
+# build files
+/cmake-build-debug
+/build
+
+# ide files
+/.idea
+/.vscode
+/.vs
+/.atom
