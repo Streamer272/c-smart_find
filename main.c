@@ -8,8 +8,7 @@ void find_in_file(const char *text, const struct dirent *directory_entry, const 
     f = fopen(directory_entry->d_name, "r");
 
     if (f == NULL) {
-        if (strict == 1)
-            printf("Couldn't open file %s, continuing...\n", directory_entry->d_name);
+        if (strict) printf("Couldn't open file %s, continuing...\n", directory_entry->d_name);
 
         return;
     }
@@ -20,8 +19,9 @@ void find_in_file(const char *text, const struct dirent *directory_entry, const 
 void find_in_dir(const char *text, const char *dir, const char *file_ext, const unsigned short int strict) {
     DIR *dir_stream = opendir(dir);
     if (dir_stream == NULL) {
-        if (strict == 1)
-            printf("Couldn't open directory %s, continuing...\n", dir);
+        if (strict) printf("Couldn't open directory %s, continuing...\n", dir);
+
+        return;
     }
 
     struct dirent *directory_entry;
@@ -60,8 +60,6 @@ void show_help() {
 }
 
 int main(int argc, char *argv[]) {
-    // TODO: add more args like strict (print error if can't open file or directory)
-
     if (argc < 2) {
         return EXIT_SUCCESS;
     }
@@ -72,7 +70,7 @@ int main(int argc, char *argv[]) {
         return EXIT_SUCCESS;
     }
 
-    // ~4 MB for each
+    // ~4 kb for each
     char *text = malloc(sizeof(char) * 1024),
         *dir = malloc(sizeof(char) * 1024),
         *file_ext = malloc(sizeof(char) * 1024);
