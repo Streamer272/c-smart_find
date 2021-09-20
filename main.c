@@ -3,23 +3,47 @@
 #include <string.h>
 #include <dirent.h>
 
-void find_in_file(const char *text, const struct dirent *directory_entry, const unsigned short int strict) {
+int ends_with(const char *str, const char *prefix);
+
+void find_in_file(const char *text, const char *filename, const unsigned short int log) {
+    if (log) printf("Opening file \"%s\"\n", filename);
+
     FILE *f;
-    f = fopen(directory_entry->d_name, "r");
+    f = fopen(filename, "r");
 
     if (f == NULL) {
-        if (strict) printf("Couldn't open file %s, continuing...\n", directory_entry->d_name);
+        if (log) printf("Couldn't open file %s\n", filename);
 
         return;
+    }
+
+    int c, count = 0, line = 1;
+    while ((c = getc(f)) != EOF) {
+        if (c == '\n') {
+            line++;
+        }
+
+        if (count >= strlen(text)) {
+            if (log) printf("\t");
+            printf("Found \"%s\" on line %d in file \"%s\"\n", text, line, filename);
+
+            count = 0;
+        }
+        else if (c == (int) text[count]) {
+            count++;
+        }
+        else if (count != 0 && c != (int) text[count]) {
+            count = 0;
+        }
     }
 
     fclose(f);
 }
 
-void find_in_dir(const char *text, const char *dir, const char *file_ext, const unsigned short int strict) {
+void find_in_dir(const char *text, const char *dir, const char *file_ext, const unsigned short int log) {
     DIR *dir_stream = opendir(dir);
     if (dir_stream == NULL) {
-        if (strict) printf("Couldn't open directory %s, continuing...\n", dir);
+        if (log) printf("Couldn't open directory \"%s\"\n", dir);
 
         return;
     }
@@ -28,17 +52,21 @@ void find_in_dir(const char *text, const char *dir, const char *file_ext, const 
     while ((directory_entry = readdir(dir_stream)) != NULL) {
         if (strcmp(directory_entry->d_name, ".") == 0 || strcmp(directory_entry->d_name, "..") == 0) continue;
         if ((int) directory_entry->d_type == 4) {
-            char subdir[256 + 1024 + 2];
+            char full_path[256 + 1024 + 2];
 
-            snprintf(subdir, sizeof(subdir), "%s/%s", dir, directory_entry->d_name);
+            snprintf(full_path, sizeof(full_path), "%s/%s", dir, directory_entry->d_name);
 
-            find_in_dir(text, subdir, file_ext, strict);
+            find_in_dir(text, full_path, file_ext, log);
 
             continue;
         }
 
-        if (strstr(directory_entry->d_name, file_ext) != NULL) {
-            find_in_file(text, directory_entry, strict);
+        if (ends_with(directory_entry->d_name, file_ext) == 0) {
+            char full_path[256 + 1024 + 2];
+
+            snprintf(full_path, sizeof(full_path), "%s/%s", dir, directory_entry->d_name);
+
+            find_in_file(text, full_path, log);
         }
     }
 
@@ -49,13 +77,24 @@ int starts_with(const char *str, const char *prefix) {
     return strncmp(prefix, str, strlen(prefix));
 }
 
+int ends_with(const char *str, const char *prefix) {
+    unsigned long int strLen = strlen(str);
+    unsigned long int prefixLen = strlen(prefix);
+
+    for (int i = 0; i < strlen(prefix); ++i) {
+        if (strcmp(&str[strLen - prefixLen + i], &prefix[i]) != 0) return 1;
+    }
+
+    return 0;
+}
+
 void show_help() {
     printf("Available commands:\n");
     printf("\tfind:\n");
     printf("\t\ttext        (t)     - Text you want to search for\n");
     printf("\t\tdir         (d)     - Text you want to search in\n");
     printf("\t\tfile-ext    (fe)    - File types you want to search in\n");
-    printf("\t\tstrict      (s)     - Strict mode\n");
+    printf("\t\tlog      (s)     - log mode\n");
     printf("\n");
 }
 
@@ -74,7 +113,7 @@ int main(int argc, char *argv[]) {
     char *text = malloc(sizeof(char) * 1024),
         *dir = malloc(sizeof(char) * 1024),
         *file_ext = malloc(sizeof(char) * 1024);
-    unsigned short int strict = 0;
+    unsigned short int log = 0;
 
     if (text == NULL || dir == NULL || file_ext == NULL) {
         perror("Couldn't allocate memory");
@@ -96,8 +135,8 @@ int main(int argc, char *argv[]) {
         if (starts_with(argv[i], "-t") == 0 || starts_with(argv[i], "--text") == 0) ptr = text;
         else if (starts_with(argv[i], "-d") == 0 || starts_with(argv[i], "--dir") == 0) ptr = dir;
         else if (starts_with(argv[i], "-fe") == 0 || starts_with(argv[i], "--file-ext") == 0) ptr = file_ext;
-        else if (starts_with(argv[i], "-s") == 0 || starts_with(argv[i], "--strict") == 0) {
-            strict = 1;
+        else if (starts_with(argv[i], "-l") == 0 || starts_with(argv[i], "--log") == 0) {
+            log = 1;
 
             continue;
         }
@@ -117,7 +156,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    find_in_dir(text, dir, file_ext, strict);
+    find_in_dir(text, dir, file_ext, log);
 
     free(text);
     free(dir);
