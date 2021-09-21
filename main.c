@@ -38,7 +38,7 @@ void find_in_file(const char *text, const char *filename, const unsigned short i
         }
     }
 
-    if (log) printf("Found %d occurrences in %s\n", filename);
+    if (log) printf("Found %d occurrences in %s\n", found_count, filename);
 
     fclose(f);
 }
@@ -98,7 +98,7 @@ void show_help() {
     printf("\t\tdir       (d)   - Text you want to search in\n");
     printf("\t\tfile-ext  (fe)  - File types you want to search in\n");
     printf("\t\tlog       (l)   - log mode\n");
-    printf("\nExample command: \'sf -t=\"printf\" --dir="." -fe=".c" --log\'\n");
+    printf("\nExample command: \'sf -t=\"printf\" --dir=\".\" -fe=\".c\" --log\'\n");
     printf("\n");
 }
 
